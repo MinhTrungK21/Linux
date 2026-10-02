@@ -1,0 +1,62 @@
+timeout 300
+verbose on
+expect {
+    "Press SPACE to abort autoboot in 2 seconds"
+}
+send " "
+
+expect {
+    "=>"
+}
+send "setenv ipaddr 192.168.9.8"
+
+expect {
+    "=>"
+}
+send "setenv serverip 192.168.9.9"
+
+expect {
+    "=>"
+}
+send "setenv netmask 255.255.255.0"
+
+expect {
+    "=>"
+}
+send "setenv gatewayip 192.168.9.9"
+
+expect {
+    "=>"
+}
+send setenv rootpath '/home/iris/ti-sdk-kernel/irisNFS'
+
+expect {
+    "=>"
+}
+send "setenv bootfile zImage"
+
+expect {
+    "=>"
+}
+send "setenv fdtfile am335x-boneblack.dtb"
+
+expect {
+    "=>"
+}
+send "setenv nfsopts 'nolock,v3,tcp,rsize=4096,wsize=4096'"
+
+expect {
+    "=>"
+}
+send setenv bootargs 'console=ttyO0,115200n8 root=/dev/nfs nfsroot=192.168.9.9:/home/iris/ti-sdk-kernel/irisNFS,nolock,v3,tcp,rsize=4096,wsize=4096 rw ip=192.168.9.8:192.168.9.9:192.168.9.9:255.255.255.0::eth0:'
+
+expect {
+    "=>"
+}
+send setenv bootcmd 'run findfdt; run init_console; setenv autoload no;tftp ${loadaddr} zImage; tftp ${fdtaddr} ${fdtfile}; bootz ${loadaddr} - ${fdtaddr}'
+
+expect {
+    "=>"
+}
+send "boot"
+

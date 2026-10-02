@@ -1,0 +1,115 @@
+diff --git a/arch/arm/boot/dts/am335x-boneblack.dts b/arch/arm/boot/dts/am335x-boneblack.dts
+index b956e2f60fe07..520ec16a1763b 100644
+--- a/arch/arm/boot/dts/am335x-boneblack.dts
++++ b/arch/arm/boot/dts/am335x-boneblack.dts
+@@ -12,6 +12,7 @@
+ / {
+ 	model = "TI AM335x BeagleBone Black";
+ 	compatible = "ti,am335x-bone-black", "ti,am335x-bone", "ti,am33xx";
++
+ };
+ 
+ &cpu0_opp_table {
+@@ -172,3 +173,35 @@ &gpio3 {
+ &baseboard_eeprom {
+ 	vcc-supply = <&ldo4_reg>;
+ };
++&am33xx_pinmux {
++	bbb_spi0_pins: bbb_spi0_pins {
++		pinctrl-single,pins = <
++			/* SPI0: CLK(P9-22) DIN/MOSI(P9-18, spi0_d1) MISO(P9-21, spi0_d0) CS(P9-17) */
++			AM33XX_PADCONF(AM335X_PIN_SPI0_SCLK, PIN_INPUT_PULLUP,MUX_MODE0)
++			AM33XX_PADCONF(AM335X_PIN_SPI0_D0,   PIN_INPUT_PULLUP,MUX_MODE0)
++			AM33XX_PADCONF(AM335X_PIN_SPI0_D1,   PIN_INPUT_PULLUP,MUX_MODE0)
++			AM33XX_PADCONF(AM335X_PIN_SPI0_CS0,  PIN_INPUT_PULLUP,MUX_MODE0)
++			/* DC(P9-12, gpio1_28) RST(P9-23, gpio1_17) BL(P9-15, gpio1_16) */
++			AM33XX_PADCONF(AM335X_PIN_GPMC_BEN1, PIN_OUTPUT,MUX_MODE7)
++			AM33XX_PADCONF(AM335X_PIN_GPMC_A1,   PIN_OUTPUT,MUX_MODE7)
++			AM33XX_PADCONF(AM335X_PIN_GPMC_A0,   PIN_OUTPUT,MUX_MODE7)
++		>;
++	};
++};
++&spi0 {
++	status = "okay";
++	pinctrl-names = "default";
++	pinctrl-0 = <&bbb_spi0_pins>;
++
++	st7789@0 {
++		reg = <0>;
++		compatible = "sitronix,st7789v";
++		spi-max-frequency = <16000000>;
++		width = <172>;
++		height = <320>;
++		buswidth =  <8>;
++		dc-gpios = <&gpio1 28 GPIO_ACTIVE_HIGH>;
++		reset-gpios = <&gpio1 17 GPIO_ACTIVE_LOW>;
++		led-gpios = <&gpio1 16 GPIO_ACTIVE_HIGH>;
++	};
++};
+diff --git a/drivers/staging/fbtft/fb_st7789v.c b/drivers/staging/fbtft/fb_st7789v.c
+index 861a154144e66..83a3d63aa2ca7 100644
+--- a/drivers/staging/fbtft/fb_st7789v.c
++++ b/drivers/staging/fbtft/fb_st7789v.c
+@@ -293,6 +293,43 @@ static int set_var(struct fbtft_par *par)
+ 	return 0;
+ }
+ 
++/*
++ * 1.47" 172x320 panel: only RAM columns 34..205 of the 240-column
++ * controller RAM are wired to the glass.
++ */
++#define COL_OFFSET 34
++
++/**
++ * set_addr_win() - set the RAM window, shifted onto the visible area
++ *
++ * @par: FBTFT parameter object
++ * @xs: start column
++ * @ys: start row
++ * @xe: end column
++ * @ye: end row
++ */
++static void set_addr_win(struct fbtft_par *par, int xs, int ys, int xe, int ye)
++{
++	switch (par->info->var.rotate) {
++	case 90:
++	case 270:
++		/* MV swaps axes, so the offset moves to the rows */
++		ys += COL_OFFSET;
++		ye += COL_OFFSET;
++		break;
++	default:
++		xs += COL_OFFSET;
++		xe += COL_OFFSET;
++		break;
++	}
++
++	write_reg(par, MIPI_DCS_SET_COLUMN_ADDRESS,
++		  (xs >> 8) & 0xFF, xs & 0xFF, (xe >> 8) & 0xFF, xe & 0xFF);
++	write_reg(par, MIPI_DCS_SET_PAGE_ADDRESS,
++		  (ys >> 8) & 0xFF, ys & 0xFF, (ye >> 8) & 0xFF, ye & 0xFF);
++	write_reg(par, MIPI_DCS_WRITE_MEMORY_START);
++}
++
+ /**
+  * set_gamma() - set gamma curves
+  *
+@@ -368,15 +405,17 @@ static int blank(struct fbtft_par *par, bool on)
+ 
+ static struct fbtft_display display = {
+ 	.regwidth = 8,
+-	.width = 240,
++	.width = 172,
+ 	.height = 320,
+ 	.gamma_num = 2,
+ 	.gamma_len = 14,
+ 	.gamma = HSD20_IPS_GAMMA,
++	.backlight = 1,
+ 	.fbtftops = {
+ 		.init_display = init_display,
+ 		.write_vmem = write_vmem,
+ 		.set_var = set_var,
++		.set_addr_win = set_addr_win,
+ 		.set_gamma = set_gamma,
+ 		.blank = blank,
+ 	},

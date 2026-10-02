@@ -1,0 +1,10 @@
+diff --git a/drivers/Makefile b/drivers/Makefile
+index 6957b77a574708..7a3e8b1addd09d 100644
+--- a/drivers/Makefile
++++ b/drivers/Makefile
+@@ -190,3 +190,4 @@ obj-$(CONFIG_COUNTER)		+= counter/
+ obj-$(CONFIG_MOST)		+= most/
+ obj-$(CONFIG_PECI)		+= peci/
+ obj-$(CONFIG_HTE)		+= hte/
++obj-y +=hello-driver/
+\ No newline at end of file

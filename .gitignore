@@ -1,0 +1,18 @@
+# kernel module build output
+*.o
+*.ko
+*.mod
+*.mod.c
+.*.cmd
+Module.symvers
+modules.order
+built-in.a
+
+# binaries built for the board or the PC
+userspace/led-ctrl/led-ctrl
+userspace/on-led/on-led
+userspace/on-led/on-led-arm
+
+# Qt Creator per-user settings and build dirs
+*.pro.user
+build-*/

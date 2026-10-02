@@ -1,0 +1,13 @@
+[Unit]
+Description=BBB ST7789 LCD dashboard
+
+[Service]
+Environment=QT_QPA_PLATFORM=linuxfb:fb=/dev/fb0:size=172x320
+Environment=XDG_RUNTIME_DIR=/tmp
+ExecStartPre=-/bin/sh -c 'echo 0 > /sys/class/graphics/fbcon/cursor_blink'
+ExecStart=/opt/ok/bin/ok
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
